@@ -3,12 +3,8 @@
   and a count of the number of distinct users that uploaded those
   files
 
-  NOTE!!
-
-  this script assumes that the most recent revision of each File
-  page was added by the uploader. if a bunch of well meaning
-  admins or wlm greece folks come through and edit them all
-  then this script will be useless :-P
+  this script gets the first revision for each File page and gets user
+  information for it, so it's not going to be fast.
 """
 import sys
 import re
@@ -85,7 +81,6 @@ def get_user_ids_from_content(content):
         return [userids['userid'] for pageid in content['query']['pages'].keys()
                 for userids in content['query']['pages'][pageid]['revisions']]
     except:
-        raise
         return []
 
 
@@ -97,20 +92,13 @@ def get_pages_todo(pageids, batch_start, batch_size):
 
 def get_cat_userids(pageids, wikiname, verbose):
     api_params = ('action=query&prop=revisions&rvprop=userid'
-                  '&format=json')
+                  '&rvlimit=1&rvdir=newer&format=json')
     api_url_templ = 'https://{wiki}/w/api.php?' + api_params
     api_url = api_url_templ.format(wiki=wikiname)
     user_ids = []
     http_conn = httplib.HTTPSConnection(wikiname)
-    batch_start = 0
-    batch_size = 50
-    while True:
-        if verbose >= 2:
-            print "doing batch of pages from", batch_start
-        pages_to_do = get_pages_todo(pageids, batch_start, batch_size)
-        if pages_to_do is None:
-            return user_ids
-        api_url_chunk = api_url + get_pages_param(pages_to_do)
+    for pageid in pageids:
+        api_url_chunk = api_url + get_pages_param([pageid])
         if verbose >= 2:
             print "url is", api_url_chunk
         lagged, contents = get_url(api_url_chunk, http_conn, verbose)
@@ -119,10 +107,10 @@ def get_cat_userids(pageids, wikiname, verbose):
             time.sleep(5)
             continue
         contents = json.loads(contents)
-        if verbose >= 2:
+        if verbose >= 3:
             print "extending by", get_user_ids_from_content(contents)
         user_ids.extend(get_user_ids_from_content(contents))
-        batch_start = batch_start + batch_size
+    return user_ids
 
 
 def get_continue_info(contents):
