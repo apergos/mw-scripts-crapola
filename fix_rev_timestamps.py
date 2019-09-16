@@ -132,10 +132,10 @@ def fix_timestamp(timestamp):
         
 def do_main():
     '''entry point'''
-    #print("Remove this line in do_main and add user/password below")
-    #return
-    user = 'root'
-    password = 'notverysecure'
+    print("Remove this line in do_main and add user/password below")
+    return
+    # user = 'someuser'
+    # password = 'somepassword'
 
     dbcursor = get_cursor(user, password)
     wiki = 'elwikt'
