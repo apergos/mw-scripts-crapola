@@ -21,6 +21,10 @@ QPARAMS = ['-owner:ariel@wikimedia.org', '-reviewer:ariel@wikimedia.org',
            'project:mediawiki/core', 'branch:master']
 # number of changes to get in a single request. we should no way reach this number
 MAXCHANGES = '25'
+# why multiple paths instead of one regex? because I can't get parens + | to
+# work in a regex to the rest api. period. not happening. also it seems
+# to require .* at the end instead of allowing me to specify the first
+# part of the path and let that be a match. whatever, so done.
 PATHS = ["^maintenance/dump.*", "^maintenance%2Fincludes%2F.*Dump.*"]
 USERAGENT = "gerrit_check.py/0.1 (atg)"
 
@@ -67,11 +71,17 @@ def get_changes(days):
         q_params.extend(other_params)
         paramstring = "+".join(q_params)
         params = "q={paramstring}&n={num}".format(paramstring=paramstring, num=MAXCHANGES)
+        # we do this because passing values in the usual way to the request as a dict of params
+        # results in some urlencoding which gerrit, or perhaps its web server, doesn't like.
+        # no joke.
         url = BASEURL + "?" + params
         response = requests.get(url, headers={'User-Agent': USERAGENT})
         # print(response.url)
         if response.status_code == 200:
             if response.text:
+                # what are these five characters, you ask? junk that's stuffed
+                # on the string before the real response, from the wmf gerrit server,
+                # thanks so much
                 results = json.loads(response.text[5:])
                 result_sets.append(results)
         else:
